@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- ==========================================================================
+       SEO DE BASE — Les valeurs par défaut ci-dessous sont écrasées au chargement
+       par app.js à partir de data.js (SITE_CONFIG.seo). Elles sont présentes ici
+       en dur pour que les robots d'indexation et les aperçus de partage
+       fonctionnent même en cas d'échec du JS (fallback SSR-like).
+       ========================================================================== -->
+  <title>DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux &amp; Actions</title>
+  <meta name="description" content="Robot d'analyse financière multi-actifs propulsé par l'IA. Signaux techniques et fondamentaux en temps réel sur Forex, Crypto, Métaux (Or/XAUUSD) et Actions." />
+  <meta name="keywords" content="trading bot, signaux forex, signaux crypto, analyse technique IA, XAUUSD, DONKO ANALYTIC BOT, EMPIRE CODE" />
+  <meta name="author" content="EMPIRE CODE" />
+  <meta name="theme-color" content="#0B0F1A" data-theme-meta />
+
+  <!-- ========================== OPEN GRAPH (Facebook, WhatsApp, LinkedIn) ========================== -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux & Actions" />
+  <meta property="og:description" content="Signaux techniques et fondamentaux en temps réel, propulsés par l'IA, sur Forex, Crypto, Métaux et Actions." />
+  <meta property="og:image" content="donko.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:image:alt" content="Logo DONKO ANALYTIC BOT" />
+  <meta property="og:url" content="https://empirecode.github.io/donko-analytic-bot/" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="DONKO ANALYTIC BOT" />
+
+  <!-- ========================== TWITTER CARDS ========================== -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux & Actions" />
+  <meta name="twitter:description" content="Signaux techniques et fondamentaux en temps réel, propulsés par l'IA." />
+  <meta name="twitter:image" content="donko.png" />
+
+  <!-- ========================== PWA — MANIFEST & ICONS ========================== -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+
+  <!-- iOS -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DONKO BOT" />
+
+  <!-- Android / Chrome -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512x512.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- ========================== POLICES & STYLES ========================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========================== HEADER ========================== -->
+  <header class="site-header">
+    <div class="brand">
+      <img data-brand-logo src="donko.png" alt="DONKO ANALYTIC BOT" />
+      <span data-brand-name>DONKO ANALYTIC BOT</span>
+    </div>
+    <nav class="nav-menu" data-header-menu></nav>
+    <a class="btn-cta" data-header-cta href="#pricing">Démarrer maintenant</a>
+  </header>
+
+  <!-- ========================== HERO ========================== -->
+  <section class="hero" id="hero">
+    <span class="hero-eyebrow" data-hero-eyebrow></span>
+    <h1 data-hero-title></h1>
+    <p data-hero-subtitle></p>
+    <div class="hero-actions">
+      <a class="btn-primary" data-hero-btn-primary href="#pricing"></a>
+      <a class="btn-secondary" data-hero-btn-secondary href="#markets"></a>
+    </div>
+  </section>
+
+  <!-- ========================== MARKETS ========================== -->
+  <section class="markets" id="markets">
+    <div class="container">
+      <h2>Marchés couverts</h2>
+      <div class="markets-grid" data-markets-list></div>
+    </div>
+  </section>
+
+  <!-- ========================== PRICING ========================== -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="pricing-header">
+        <h2 data-pricing-title></h2>
+        <p data-pricing-subtitle></p>
+      </div>
+      <div class="pricing-grid" data-pricing-grid></div>
+      <ul class="pricing-features" data-pricing-features></ul>
+    </div>
+  </section>
+
+  <!-- ========================== TELEGRAM CONNECT ========================== -->
+  <section class="telegram-connect" id="telegram-connect">
+    <div class="container">
+      <h2 data-tg-title></h2>
+      <p data-tg-subtitle></p>
+      <form class="tg-form" data-tg-form>
+        <input type="email" data-tg-email-input required />
+        <button type="submit" data-tg-submit-btn></button>
+      </form>
+      <div class="tg-result" data-tg-result hidden></div>
+    </div>
+  </section>
+
+  <!-- ========================== FOOTER (EMPIRE CODE — obligatoire) ========================== -->
+  <footer class="site-footer" id="footer">
+    <img class="footer-logo" data-footer-logo src="donko.png" alt="EMPIRE CODE Footer Logo" width="100" />
+    <p class="footer-copyright" data-footer-copyright></p>
+    <p class="footer-tagline" data-footer-tagline></p>
+    <div class="footer-contacts" data-footer-contacts></div>
+    <p class="footer-disclaimer" data-footer-disclaimer></p>
+  </footer>
+
+  <!-- ========================== SCRIPTS ========================== -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
