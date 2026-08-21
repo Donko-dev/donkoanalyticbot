@@ -191,6 +191,51 @@
   }
 
   /* ------------------------------------------------------------------------
+   * 5bis. JSONP — Contourne le blocage CORS des Web Apps Google Apps Script.
+   * Google ne permet pas de configurer les en-têtes CORS sur un Content
+   * Service ; la méthode officiellement recommandée pour un appel depuis un
+   * site externe est le JSONP (chargement via balise <script>, qui n'est
+   * pas soumis à la politique CORS des navigateurs).
+   * ---------------------------------------------------------------------- */
+  function jsonpRequest(url, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      const callbackName = "donkoCb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      const script = document.createElement("script");
+      let settled = false;
+
+      function cleanup() {
+        delete window[callbackName];
+        script.remove();
+        clearTimeout(timer);
+      }
+
+      window[callbackName] = function (data) {
+        settled = true;
+        resolve(data);
+        cleanup();
+      };
+
+      script.onerror = function () {
+        if (!settled) {
+          reject(new Error("Échec du chargement JSONP"));
+          cleanup();
+        }
+      };
+
+      const timer = setTimeout(() => {
+        if (!settled) {
+          reject(new Error("Délai dépassé"));
+          cleanup();
+        }
+      }, timeoutMs);
+
+      const separator = url.indexOf("?") === -1 ? "?" : "&";
+      script.src = url + separator + "callback=" + callbackName;
+      document.body.appendChild(script);
+    });
+  }
+
+  /* ------------------------------------------------------------------------
    * 6bis. TELEGRAM CONNECT — Widget d'auto-liaison (email → lien Telegram)
    * ---------------------------------------------------------------------- */
   function injectTelegramConnect() {
@@ -219,8 +264,7 @@
 
       try {
         const url = cfg.api.appsScriptWebAppUrl + cfg.api.getTelegramLinkEndpoint + "&email=" + encodeURIComponent(email);
-        const res = await fetch(url);
-        const data = await res.json();
+        const data = await jsonpRequest(url);
 
         if (!data.success) {
           resultEl.textContent = "❌ " + (data.message || tg.errorNotFound);

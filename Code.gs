@@ -79,19 +79,37 @@ const PLAN_DURATIONS_DAYS = {
 
 // ============================================================================
 // POINT D'ENTRÉE — Requêtes GET
+// ----------------------------------------------------------------------------
+// Supporte le JSONP (paramètre ?callback=xxx) : Google Apps Script ne permet
+// pas de configurer d'en-têtes CORS sur un Content Service, donc un appel
+// fetch() depuis un site externe (ex: le widget "Connecter mon Telegram")
+// est bloqué par le navigateur. Le JSONP contourne ça en chargeant la
+// réponse via une balise <script>, qui n'est pas soumise à CORS.
+// Les appels serveur-à-serveur (bot.py, etc.) ne sont pas concernés par
+// CORS — ils continuent de recevoir du JSON normal, sans "callback".
 // ============================================================================
 function doGet(e) {
+  let output;
   try {
     const action = e.parameter.action;
 
-    if (action === "checkStatus") return handleCheckStatus(e);
-    if (action === "listSubscribers") return handleListSubscribers(e);
-    if (action === "getTelegramLink") return handleGetTelegramLink(e);
-
-    return jsonResponse({ success: false, message: "Action GET inconnue." });
+    if (action === "checkStatus") output = handleCheckStatus(e);
+    else if (action === "listSubscribers") output = handleListSubscribers(e);
+    else if (action === "getTelegramLink") output = handleGetTelegramLink(e);
+    else output = jsonResponse({ success: false, message: "Action GET inconnue." });
   } catch (err) {
-    return jsonResponse({ success: false, message: "Erreur serveur : " + err.message });
+    output = jsonResponse({ success: false, message: "Erreur serveur : " + err.message });
   }
+
+  const callback = e && e.parameter && e.parameter.callback;
+  if (callback && /^[a-zA-Z0-9_$]+$/.test(callback)) {
+    const jsonText = output.getContent();
+    const jsonpOutput = ContentService.createTextOutput(callback + "(" + jsonText + ");");
+    jsonpOutput.setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return jsonpOutput;
+  }
+
+  return output;
 }
 
 // ============================================================================
