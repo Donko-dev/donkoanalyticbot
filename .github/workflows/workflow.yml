@@ -1,0 +1,51 @@
+# ============================================================================
+# DONKO ANALYTIC BOT — workflow.yml
+# ----------------------------------------------------------------------------
+# Exécute bot.py à intervalles réguliers via GitHub Actions (hébergement
+# gratuit, aucun serveur à maintenir).
+# Structure "à plat" : tous les fichiers (bot.py, requirements.txt, etc.)
+# sont à la racine du dépôt.
+#
+# ⚠️ SECRETS À CONFIGURER : Settings > Secrets and variables > Actions
+#   - ANTHROPIC_API_KEY       → Clé API Anthropic Claude
+#   - APPS_SCRIPT_WEBAPP_URL  → URL de déploiement du Web App Code.gs
+#   - BOT_SHARED_SECRET       → Secret partagé avec Code.gs
+#   - TELEGRAM_BOT_TOKEN      → Token du bot Telegram (via @BotFather)
+#   - USERS_TO_NOTIFY_JSON    → (optionnel) liste de secours si la Sheet est indisponible
+# ============================================================================
+name: DONKO Analytic Bot - Cycle d'analyse
+
+on:
+  schedule:
+    # Toutes les heures, du lundi au vendredi (marchés actifs). UTC.
+    - cron: "0 * * * 1-5"
+  workflow_dispatch: {} # Permet un déclenchement manuel depuis l'onglet Actions
+
+jobs:
+  run-analysis:
+    name: Exécution du cycle d'analyse
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupération du code source
+        uses: actions/checkout@v4
+
+      - name: Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Installation des dépendances
+        run: pip install -r requirements.txt
+
+      - name: Exécution du bot d'analyse
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          APPS_SCRIPT_WEBAPP_URL: ${{ secrets.APPS_SCRIPT_WEBAPP_URL }}
+          BOT_SHARED_SECRET: ${{ secrets.BOT_SHARED_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          USERS_TO_NOTIFY_JSON: ${{ secrets.USERS_TO_NOTIFY_JSON }}
+        run: python bot.py
