@@ -2,8 +2,6 @@
   <img src="donko.png" alt="EMPIRE CODE Logo" width="140"/><br><br>
   <b>DONKO ANALYTIC BOT</b><br>
 
-<p align="center">
-  <a href="#-français">🇫🇷 Français</a> &nbsp;|&nbsp;
   
   # DONKO ANALYTIC BOT
 
