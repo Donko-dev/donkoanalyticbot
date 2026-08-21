@@ -1,6 +1,10 @@
-<div align="center">
-  <img src="assets/donko.png" alt="DONKO ANALYTIC BOT" width="140"/>
+<p align="center">
+  <img src="donko.png" alt="EMPIRE CODE Logo" width="140"/><br><br>
+  <b>DONKO ANALYTIC BOT</b><br>
 
+<p align="center">
+  <a href="#-français">🇫🇷 Français</a> &nbsp;|&nbsp;
+  
   # DONKO ANALYTIC BOT
 
   **Robot d'aide à la décision et d'analyse financière IA multi-actifs**
