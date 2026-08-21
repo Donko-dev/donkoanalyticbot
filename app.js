@@ -2,9 +2,18 @@
  * ============================================================================
  * DONKO ANALYTIC BOT — app.js
  * ----------------------------------------------------------------------------
- * MOTEUR DE RENDU — Injecte dynamiquement le contenu de data.js dans le DOM.
+ * MOTEUR DE RENDU — Injecte dynamiquement le contenu de data.js dans le DOM,
+ * gère le changement de langue (FR/EN/DE), le changement de thème
+ * (clair/sombre) et l'écran de démarrage animé.
  * Ce fichier ne contient AUCUN texte ni couleur en dur : tout provient de
  * SITE_CONFIG (voir data.js). Pour changer le site, on modifie data.js.
+ *
+ * ARCHITECTURE :
+ *   - Les fonctions "...Once()" attachent la structure et les écouteurs
+ *     d'événements UNE SEULE FOIS, au chargement.
+ *   - Les fonctions "apply...Text(t)" ne font QUE remplacer du texte/HTML :
+ *     elles sont rejouées à chaque changement de langue, sans jamais
+ *     rattacher de nouvel écouteur (pour éviter les doublons d'événements).
  * ============================================================================
  */
 
@@ -18,67 +27,207 @@
 
   const cfg = SITE_CONFIG;
 
-  /* ------------------------------------------------------------------------
-   * 1. INJECTION DES VARIABLES CSS (:root) DEPUIS cfg.theme
-   * ---------------------------------------------------------------------- */
-  function injectTheme() {
-    const root = document.documentElement.style;
-    const t = cfg.theme;
+  const STORAGE_KEYS = {
+    language: "donko_lang",
+    theme: "donko_theme",
+  };
 
-    root.setProperty("--color-primary", t.colorPrimary);
-    root.setProperty("--color-secondary", t.colorSecondary);
-    root.setProperty("--color-accent", t.colorAccent);
-    root.setProperty("--color-danger", t.colorDanger);
-    root.setProperty("--color-bg", t.colorBackground);
-    root.setProperty("--color-bg-alt", t.colorBackgroundAlt);
-    root.setProperty("--color-text", t.colorText);
-    root.setProperty("--color-text-muted", t.colorTextMuted);
+  let currentLanguage = cfg.defaultLanguage || "fr";
+  let currentTheme = cfg.theme.defaultMode || "dark";
+
+  /** Renvoie le dictionnaire de textes de la langue actuellement sélectionnée. */
+  function translations() {
+    return cfg.i18n[currentLanguage] || cfg.i18n[cfg.defaultLanguage];
+  }
+
+  /* ------------------------------------------------------------------------
+   * DÉTECTION DE LA PRÉFÉRENCE INITIALE (langue & thème)
+   * Ordre de priorité : préférence enregistrée > préférence système > défaut.
+   * ---------------------------------------------------------------------- */
+  function getInitialLanguage() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.language);
+      const supported = cfg.languages.map((l) => l.code);
+      if (saved && supported.includes(saved)) return saved;
+
+      const nav = (navigator.language || "").slice(0, 2).toLowerCase();
+      if (supported.includes(nav)) return nav;
+    } catch (err) {
+      /* localStorage indisponible (mode privé strict, etc.) — on ignore. */
+    }
+    return cfg.defaultLanguage || "fr";
+  }
+
+  function getInitialTheme() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.theme);
+      if (saved === "light" || saved === "dark") return saved;
+
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+        return "light";
+      }
+    } catch (err) {
+      /* idem */
+    }
+    return cfg.theme.defaultMode || "dark";
+  }
+
+  /* ------------------------------------------------------------------------
+   * THÈME — Injection des variables CSS (:root) depuis la palette active
+   * ---------------------------------------------------------------------- */
+  function applyTheme(mode) {
+    currentTheme = mode === "light" ? "light" : "dark";
+    const t = cfg.theme;
+    const palette = t.palettes[currentTheme] || t.palettes.dark;
+    const root = document.documentElement.style;
+
+    root.setProperty("--color-primary", palette.colorPrimary);
+    root.setProperty("--color-secondary", palette.colorSecondary);
+    root.setProperty("--color-accent", palette.colorAccent);
+    root.setProperty("--color-danger", palette.colorDanger);
+    root.setProperty("--color-bg", palette.colorBackground);
+    root.setProperty("--color-bg-alt", palette.colorBackgroundAlt);
+    root.setProperty("--color-text", palette.colorText);
+    root.setProperty("--color-text-muted", palette.colorTextMuted);
+    root.setProperty("--box-shadow", palette.boxShadow);
     root.setProperty("--font-heading", t.fontFamilyHeading);
     root.setProperty("--font-body", t.fontFamilyBody);
     root.setProperty("--font-size-base", t.fontSizeBase);
     root.setProperty("--border-radius", t.borderRadius);
-    root.setProperty("--box-shadow", t.boxShadow);
 
-    document
-      .querySelectorAll("[data-theme-meta]")
-      .forEach((el) => el.setAttribute("content", cfg.seo.themeColorMeta));
+    document.documentElement.setAttribute("data-theme", currentTheme);
+    document.documentElement.style.colorScheme = currentTheme; // thème natif des champs de formulaire
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute("content", palette.colorBackground);
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.theme, currentTheme);
+    } catch (err) {
+      /* ignore */
+    }
+
+    updateThemeToggleIcon();
+  }
+
+  function updateThemeToggleIcon() {
+    const iconEl = document.querySelector("[data-theme-icon]");
+    if (!iconEl) return;
+    // L'icône affichée représente le mode VERS LEQUEL on bascule au clic.
+    iconEl.textContent = currentTheme === "dark" ? "☀️" : "🌙";
+  }
+
+  function setupThemeToggle() {
+    const btn = document.querySelector("[data-theme-toggle]");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      applyTheme(currentTheme === "dark" ? "light" : "dark");
+    });
   }
 
   /* ------------------------------------------------------------------------
-   * 2. SEO — <title>, meta description, Open Graph, Twitter Cards
+   * LANGUE — Sélecteur avec drapeaux (menu déroulant)
    * ---------------------------------------------------------------------- */
-  function injectSEO() {
-    document.title = cfg.seo.siteTitle;
-    setMeta("description", cfg.seo.siteDescription);
+  function setupLanguageSwitcher() {
+    const container = document.querySelector("[data-lang-switcher]");
+    const toggleBtn = document.querySelector("[data-lang-toggle]");
+    const menu = document.querySelector("[data-lang-menu]");
+    if (!container || !toggleBtn || !menu) return;
+
+    menu.innerHTML = cfg.languages
+      .map(
+        (l) => `<button type="button" data-lang-option="${l.code}">${l.flag} <span>${l.label}</span></button>`
+      )
+      .join("");
+
+    toggleBtn.addEventListener("click", (evt) => {
+      evt.stopPropagation();
+      container.classList.toggle("open");
+      toggleBtn.setAttribute("aria-expanded", container.classList.contains("open") ? "true" : "false");
+    });
+
+    menu.querySelectorAll("[data-lang-option]").forEach((optBtn) => {
+      optBtn.addEventListener("click", () => {
+        setLanguage(optBtn.getAttribute("data-lang-option"));
+        container.classList.remove("open");
+        toggleBtn.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", (evt) => {
+      if (!container.contains(evt.target)) {
+        container.classList.remove("open");
+        toggleBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  function setLanguage(lang) {
+    const supported = cfg.languages.map((l) => l.code);
+    if (!supported.includes(lang)) return;
+    currentLanguage = lang;
+    try {
+      localStorage.setItem(STORAGE_KEYS.language, lang);
+    } catch (err) {
+      /* ignore */
+    }
+    renderTranslatedContent();
+  }
+
+  function applyLanguageSwitcherUI() {
+    const flagEl = document.querySelector("[data-lang-current-flag]");
+    const current = cfg.languages.find((l) => l.code === currentLanguage);
+    if (flagEl && current) flagEl.textContent = current.flag;
+
+    document.querySelectorAll("[data-lang-option]").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-lang-option") === currentLanguage);
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+   * SEO — <title>, meta description, Open Graph, Twitter Cards, langue
+   * (Affecte l'onglet du navigateur pour un visiteur réel ; les robots de
+   * partage lisent les balises STATIQUES d'index.html, pas ce rendu JS —
+   * c'est pourquoi index.html contient déjà les bonnes valeurs par défaut.)
+   * ---------------------------------------------------------------------- */
+  function applySEOText(t) {
+    document.title = t.seo.siteTitle;
+    setMeta("description", t.seo.siteDescription);
     setMeta("keywords", cfg.seo.keywords);
     setMeta("author", cfg.seo.author);
 
-    setMetaProp("og:title", cfg.seo.siteTitle);
-    setMetaProp("og:description", cfg.seo.siteDescription);
+    setMetaProp("og:title", t.seo.siteTitle);
+    setMetaProp("og:description", t.seo.siteDescription);
     setMetaProp("og:image", cfg.seo.ogImage);
     setMetaProp("og:image:alt", cfg.seo.ogImageAlt);
+    setMetaProp("og:image:width", String(cfg.seo.ogImageWidth));
+    setMetaProp("og:image:height", String(cfg.seo.ogImageHeight));
     setMetaProp("og:url", cfg.seo.siteUrl);
-    setMetaProp("og:locale", cfg.seo.locale);
+
+    const langCfg = cfg.languages.find((l) => l.code === currentLanguage);
+    if (langCfg) setMetaProp("og:locale", langCfg.locale);
 
     setMeta("twitter:card", cfg.seo.twitterCard);
-    setMeta("twitter:title", cfg.seo.siteTitle);
-    setMeta("twitter:description", cfg.seo.siteDescription);
+    setMeta("twitter:title", t.seo.siteTitle);
+    setMeta("twitter:description", t.seo.siteDescription);
     setMeta("twitter:image", cfg.seo.ogImage);
+
+    document.documentElement.lang = currentLanguage;
   }
 
   function setMeta(name, content) {
-    let el = document.querySelector(`meta[name="${name}"]`);
+    const el = document.querySelector(`meta[name="${name}"]`);
     if (el) el.setAttribute("content", content);
   }
   function setMetaProp(prop, content) {
-    let el = document.querySelector(`meta[property="${prop}"]`);
+    const el = document.querySelector(`meta[property="${prop}"]`);
     if (el) el.setAttribute("content", content);
   }
 
   /* ------------------------------------------------------------------------
-   * 3. BRAND / HEADER
+   * BRAND / HEADER — structure une seule fois, texte à chaque rendu
    * ---------------------------------------------------------------------- */
-  function injectHeader() {
+  function injectBrandOnce() {
     document.querySelectorAll("[data-brand-logo]").forEach((el) => {
       el.src = cfg.brand.logoPath;
       el.alt = cfg.brand.name;
@@ -87,46 +236,42 @@
       el.textContent = cfg.brand.name;
     });
 
+    const cta = document.querySelector("[data-header-cta]");
+    if (cta) cta.href = cfg.header.ctaButtonHref;
+
+    const btn1 = document.querySelector("[data-hero-btn-primary]");
+    if (btn1) btn1.href = cfg.hero.primaryButtonHref;
+    const btn2 = document.querySelector("[data-hero-btn-secondary]");
+    if (btn2) btn2.href = cfg.hero.secondaryButtonHref;
+  }
+
+  function applyHeaderText(t) {
     const nav = document.querySelector("[data-header-menu]");
     if (nav) {
       nav.innerHTML = cfg.header.menuItems
-        .map((item) => `<a href="${item.href}">${item.label}</a>`)
+        .map((item) => `<a href="${item.href}">${t.header.menuLabels[item.id]}</a>`)
         .join("");
     }
-
     const cta = document.querySelector("[data-header-cta]");
-    if (cta) {
-      cta.textContent = cfg.header.ctaButtonText;
-      cta.href = cfg.header.ctaButtonHref;
-    }
+    if (cta) cta.textContent = t.header.ctaButtonText;
   }
 
   /* ------------------------------------------------------------------------
-   * 4. HERO
+   * HERO
    * ---------------------------------------------------------------------- */
-  function injectHero() {
-    const h = cfg.hero;
+  function applyHeroText(t) {
     const styles = cfg.theme.textStyles;
-
-    setText("[data-hero-eyebrow]", h.eyebrow);
-    setText("[data-hero-title]", h.title, {
+    setText("[data-hero-eyebrow]", t.hero.eyebrow);
+    setText("[data-hero-title]", t.hero.title, {
       bold: styles.heroTitleBold,
       underline: styles.heroTitleUnderline,
     });
-    setText("[data-hero-subtitle]", h.subtitle, {
-      italic: styles.heroSubtitleItalic,
-    });
+    setText("[data-hero-subtitle]", t.hero.subtitle, { italic: styles.heroSubtitleItalic });
 
     const btn1 = document.querySelector("[data-hero-btn-primary]");
-    if (btn1) {
-      btn1.textContent = h.primaryButtonText;
-      btn1.href = h.primaryButtonHref;
-    }
+    if (btn1) btn1.textContent = t.hero.primaryButtonText;
     const btn2 = document.querySelector("[data-hero-btn-secondary]");
-    if (btn2) {
-      btn2.textContent = h.secondaryButtonText;
-      btn2.href = h.secondaryButtonHref;
-    }
+    if (btn2) btn2.textContent = t.hero.secondaryButtonText;
   }
 
   function setText(selector, text, styleFlags = {}) {
@@ -139,63 +284,62 @@
   }
 
   /* ------------------------------------------------------------------------
-   * 5. MARKETS
+   * MARKETS
    * ---------------------------------------------------------------------- */
-  function injectMarkets() {
+  function applyMarketsText(t) {
+    setText("[data-markets-title]", t.markets.sectionTitle);
+
     const container = document.querySelector("[data-markets-list]");
     if (!container) return;
     container.innerHTML = cfg.markets
-      .map(
-        (m) => `
+      .map((m) => {
+        const item = t.markets.items[m.id];
+        return `
         <div class="market-card">
           <span class="market-icon">${m.icon}</span>
-          <h3>${m.name}</h3>
-          <p>${m.example}</p>
-        </div>`
-      )
+          <h3>${item.name}</h3>
+          <p>${item.example}</p>
+        </div>`;
+      })
       .join("");
   }
 
   /* ------------------------------------------------------------------------
-   * 6. PRICING — grille tarifaire avec effet de prix barré
+   * PRICING — grille tarifaire avec effet de prix barré
    * ---------------------------------------------------------------------- */
-  function injectPricing() {
-    const p = cfg.pricing;
-    setText("[data-pricing-title]", p.sectionTitle);
-    setText("[data-pricing-subtitle]", p.sectionSubtitle);
+  function applyPricingText(t) {
+    setText("[data-pricing-title]", t.pricing.sectionTitle);
+    setText("[data-pricing-subtitle]", t.pricing.sectionSubtitle);
 
     const container = document.querySelector("[data-pricing-grid]");
     if (container) {
       const strike = cfg.theme.textStyles.pricingOldPriceStrike;
-      container.innerHTML = p.plans
-        .map(
-          (plan) => `
+      container.innerHTML = cfg.pricing.plans
+        .map((plan) => {
+          const text = t.pricing.planText[plan.id];
+          return `
           <div class="pricing-card ${plan.highlight ? "pricing-card--highlight" : ""}">
-            ${plan.highlight ? '<span class="badge">Populaire</span>' : ""}
-            <h3>${plan.name}</h3>
+            ${plan.highlight ? '<span class="badge">★</span>' : ""}
+            <h3>${text.name}</h3>
             <p class="price-old" style="${strike ? "text-decoration: line-through;" : ""}">
-              ${plan.oldPrice} ${p.currency}
+              ${plan.oldPrice} ${cfg.pricing.currency}
             </p>
-            <p class="price-new">${plan.newPrice} <span>${p.currency}</span></p>
-            <p class="price-duration">/ ${plan.duration}</p>
-            <a class="btn-subscribe" href="#" data-plan-id="${plan.id}">S'abonner</a>
-          </div>`
-        )
+            <p class="price-new">${plan.newPrice} <span>${cfg.pricing.currency}</span></p>
+            <p class="price-duration">/ ${text.duration}</p>
+            <a class="btn-subscribe" href="#" data-plan-id="${plan.id}">${t.pricing.subscribeButtonText}</a>
+          </div>`;
+        })
         .join("");
     }
 
     const featuresList = document.querySelector("[data-pricing-features]");
     if (featuresList) {
-      featuresList.innerHTML = p.features.map((f) => `<li>✔ ${f}</li>`).join("");
+      featuresList.innerHTML = t.pricing.features.map((f) => `<li>✔ ${f}</li>`).join("");
     }
   }
 
   /* ------------------------------------------------------------------------
-   * 5bis. JSONP — Contourne le blocage CORS des Web Apps Google Apps Script.
-   * Google ne permet pas de configurer les en-têtes CORS sur un Content
-   * Service ; la méthode officiellement recommandée pour un appel depuis un
-   * site externe est le JSONP (chargement via balise <script>, qui n'est
-   * pas soumis à la politique CORS des navigateurs).
+   * JSONP — Contourne le blocage CORS des Web Apps Google Apps Script.
    * ---------------------------------------------------------------------- */
   function jsonpRequest(url, timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
@@ -236,10 +380,10 @@
   }
 
   /* ------------------------------------------------------------------------
-   * 6bis. TELEGRAM CONNECT — Widget d'auto-liaison (email → lien Telegram)
+   * TELEGRAM CONNECT — texte (à chaque rendu) + soumission (une seule fois)
    * ---------------------------------------------------------------------- */
-  function injectTelegramConnect() {
-    const tg = cfg.telegramConnect;
+  function applyTelegramConnectText(t) {
+    const tg = t.telegramConnect;
     setText("[data-tg-title]", tg.sectionTitle);
     setText("[data-tg-subtitle]", tg.sectionSubtitle);
 
@@ -248,16 +392,25 @@
 
     const btn = document.querySelector("[data-tg-submit-btn]");
     if (btn) btn.textContent = tg.buttonText;
+  }
 
+  function setupTelegramConnectForm() {
     const form = document.querySelector("[data-tg-form]");
-    if (!form) return;
+    const input = document.querySelector("[data-tg-email-input]");
+    const btn = document.querySelector("[data-tg-submit-btn]");
+    const resultEl = document.querySelector("[data-tg-result]");
+    if (!form || !input || !btn || !resultEl) return;
 
     form.addEventListener("submit", async (evt) => {
       evt.preventDefault();
       const email = input.value.trim();
       if (!email) return;
 
-      const resultEl = document.querySelector("[data-tg-result]");
+      // On relit les textes de la langue COURANTE au moment de la soumission
+      // (pas ceux capturés à l'initialisation), pour rester juste même après
+      // un changement de langue en cours de route.
+      const tg = translations().telegramConnect;
+
       resultEl.hidden = false;
       resultEl.textContent = tg.loadingText;
       btn.disabled = true;
@@ -284,16 +437,15 @@
   }
 
   /* ------------------------------------------------------------------------
-   * 7. FOOTER — section EMPIRE CODE obligatoire
+   * FOOTER — Bloc EMPIRE CODE (structure fixe, une fois) + disclaimer (i18n)
    * ---------------------------------------------------------------------- */
-  function injectFooter() {
+  function injectFooterOnce() {
     const f = cfg.footer;
     document.querySelectorAll("[data-footer-logo]").forEach((el) => {
       el.src = f.logoPath;
       el.alt = f.logoAlt;
     });
 
-    setText("[data-footer-copyright]", "", {});
     const copyEl = document.querySelector("[data-footer-copyright]");
     if (copyEl) copyEl.innerHTML = f.copyrightText;
 
@@ -311,23 +463,70 @@
         <a href="${c.boutique.href}" target="_blank" rel="noopener">${c.boutique.label}: ${c.boutique.name}</a>
       `;
     }
+  }
 
-    const disclaimerEl = document.querySelector("[data-footer-disclaimer]");
-    if (disclaimerEl) disclaimerEl.textContent = f.disclaimer;
+  function applyFooterDisclaimer(t) {
+    setText("[data-footer-disclaimer]", t.footer.disclaimer);
   }
 
   /* ------------------------------------------------------------------------
-   * 8. INITIALISATION
+   * SPLASH — Écran de démarrage animé (logo qui tourne 3 à 5 secondes)
+   * ---------------------------------------------------------------------- */
+  function applySplashText(t) {
+    setText("[data-splash-text]", t.splash.loadingText);
+  }
+
+  function setupSplashScreen() {
+    const logo = document.querySelector("[data-splash-logo]");
+    if (logo) logo.src = cfg.splash.logoPath || cfg.brand.logoPath;
+
+    const splashEl = document.querySelector("[data-splash-screen]");
+    if (!splashEl) return;
+
+    if (!cfg.splash.enabled) {
+      splashEl.remove();
+      return;
+    }
+
+    const duration = cfg.splash.durationMs || 4000;
+    setTimeout(() => {
+      splashEl.classList.add("hidden");
+      setTimeout(() => splashEl.remove(), 700); // laisse le temps au fondu CSS
+    }, duration);
+  }
+
+  /* ------------------------------------------------------------------------
+   * RENDU — Applique la langue courante à TOUT le contenu textuel
+   * ---------------------------------------------------------------------- */
+  function renderTranslatedContent() {
+    const t = translations();
+    applySEOText(t);
+    applyHeaderText(t);
+    applyHeroText(t);
+    applyMarketsText(t);
+    applyPricingText(t);
+    applyTelegramConnectText(t);
+    applyFooterDisclaimer(t);
+    applySplashText(t);
+    applyLanguageSwitcherUI();
+  }
+
+  /* ------------------------------------------------------------------------
+   * INITIALISATION
    * ---------------------------------------------------------------------- */
   function init() {
-    injectTheme();
-    injectSEO();
-    injectHeader();
-    injectHero();
-    injectMarkets();
-    injectPricing();
-    injectTelegramConnect();
-    injectFooter();
+    currentLanguage = getInitialLanguage();
+    currentTheme = getInitialTheme();
+
+    applyTheme(currentTheme); // couleurs + typographie, avant tout le reste
+    injectBrandOnce();
+    injectFooterOnce();
+    renderTranslatedContent(); // tous les textes, dans la langue détectée
+
+    setupLanguageSwitcher();
+    setupThemeToggle();
+    setupTelegramConnectForm();
+    setupSplashScreen();
 
     // Enregistrement du Service Worker (PWA)
     if ("serviceWorker" in navigator) {

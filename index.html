@@ -5,26 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <!-- ==========================================================================
-       SEO DE BASE — Les valeurs par défaut ci-dessous sont écrasées au chargement
-       par app.js à partir de data.js (SITE_CONFIG.seo). Elles sont présentes ici
-       en dur pour que les robots d'indexation et les aperçus de partage
-       fonctionnent même en cas d'échec du JS (fallback SSR-like).
+       SEO & PARTAGE RÉSEAUX SOCIAUX — valeurs STATIQUES, en français par défaut.
+       ⚠️ IMPORTANT : les robots qui génèrent les aperçus de partage (Facebook,
+       WhatsApp, Telegram, Twitter/X, LinkedIn...) N'EXÉCUTENT PAS le JavaScript.
+       Ce sont CES balises-ci (pas data.js) qui déterminent ce qui s'affiche
+       quand le lien est partagé. app.js les met aussi à jour dynamiquement
+       pour un vrai visiteur (onglet du navigateur, langue choisie), mais la
+       version statique ci-dessous doit rester correcte à elle seule.
+       L'image OG est une URL ABSOLUE : une URL relative ne fonctionne pas de
+       façon fiable pour ces robots de partage.
        ========================================================================== -->
   <title>DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux &amp; Actions</title>
   <meta name="description" content="Robot d'analyse financière multi-actifs propulsé par l'IA. Signaux techniques et fondamentaux en temps réel sur Forex, Crypto, Métaux (Or/XAUUSD) et Actions." />
   <meta name="keywords" content="trading bot, signaux forex, signaux crypto, analyse technique IA, XAUUSD, DONKO ANALYTIC BOT, EMPIRE CODE" />
   <meta name="author" content="EMPIRE CODE" />
-  <meta name="theme-color" content="#0B0F1A" data-theme-meta />
+  <meta name="theme-color" content="#0B0F1A" />
 
-  <!-- ========================== OPEN GRAPH (Facebook, WhatsApp, LinkedIn) ========================== -->
+  <!-- ========================== OPEN GRAPH (Facebook, WhatsApp, Telegram, LinkedIn) ========================== -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux & Actions" />
   <meta property="og:description" content="Signaux techniques et fondamentaux en temps réel, propulsés par l'IA, sur Forex, Crypto, Métaux et Actions." />
-  <meta property="og:image" content="donko.png" />
+  <meta property="og:image" content="https://donko-dev.github.io/donkoanalyticbot/icon-512x512.png" />
+  <meta property="og:image:secure_url" content="https://donko-dev.github.io/donkoanalyticbot/icon-512x512.png" />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
   <meta property="og:image:alt" content="Logo DONKO ANALYTIC BOT" />
-  <meta property="og:url" content="https://empirecode.github.io/donko-analytic-bot/" />
+  <meta property="og:url" content="https://donko-dev.github.io/donkoanalyticbot/" />
   <meta property="og:locale" content="fr_FR" />
   <meta property="og:site_name" content="DONKO ANALYTIC BOT" />
 
@@ -32,7 +39,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="DONKO ANALYTIC BOT — Signaux IA Forex, Crypto, Métaux & Actions" />
   <meta name="twitter:description" content="Signaux techniques et fondamentaux en temps réel, propulsés par l'IA." />
-  <meta name="twitter:image" content="donko.png" />
+  <meta name="twitter:image" content="https://donko-dev.github.io/donkoanalyticbot/icon-512x512.png" />
 
   <!-- ========================== PWA — MANIFEST & ICONS ========================== -->
   <link rel="manifest" href="manifest.json" />
@@ -58,6 +65,12 @@
 </head>
 <body>
 
+  <!-- ========================== SPLASH SCREEN (logo animé au démarrage) ========================== -->
+  <div class="splash-screen" data-splash-screen>
+    <img data-splash-logo src="donko.png" alt="DONKO ANALYTIC BOT" class="splash-logo" />
+    <p class="splash-text" data-splash-text></p>
+  </div>
+
   <!-- ========================== HEADER ========================== -->
   <header class="site-header">
     <div class="brand">
@@ -65,7 +78,18 @@
       <span data-brand-name>DONKO ANALYTIC BOT</span>
     </div>
     <nav class="nav-menu" data-header-menu></nav>
-    <a class="btn-cta" data-header-cta href="#pricing">Démarrer maintenant</a>
+    <div class="header-controls">
+      <div class="lang-switcher" data-lang-switcher>
+        <button type="button" class="lang-toggle" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Changer de langue">
+          <span data-lang-current-flag>🇫🇷</span>
+        </button>
+        <div class="lang-menu" data-lang-menu></div>
+      </div>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Changer de thème">
+        <span data-theme-icon>☀️</span>
+      </button>
+      <a class="btn-cta" data-header-cta href="#pricing"></a>
+    </div>
   </header>
 
   <!-- ========================== HERO ========================== -->
@@ -82,7 +106,7 @@
   <!-- ========================== MARKETS ========================== -->
   <section class="markets" id="markets">
     <div class="container">
-      <h2>Marchés couverts</h2>
+      <h2 data-markets-title></h2>
       <div class="markets-grid" data-markets-list></div>
     </div>
   </section>
