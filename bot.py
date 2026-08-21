@@ -39,7 +39,11 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 # en test local. En production, la liste vient automatiquement de la Google
 # Sheet via listSubscribers() — voir fetch_subscribers() plus bas — donc ce
 # secret n'a normalement plus besoin d'être rempli.
-USERS_TO_NOTIFY_FALLBACK = json.loads(os.environ.get("USERS_TO_NOTIFY_JSON", "[]"))
+# ⚠️ On utilise "or" plutôt que le paramètre par défaut de .get() car GitHub
+# Actions transmet une chaîne VIDE ("") si le secret n'existe pas, plutôt que
+# de ne pas définir la variable — .get(..., "[]") ne se déclencherait jamais.
+_raw_users_json = os.environ.get("USERS_TO_NOTIFY_JSON") or "[]"
+USERS_TO_NOTIFY_FALLBACK = json.loads(_raw_users_json)
 
 # Marchés surveillés — symbole Yahoo Finance : libellé affiché
 MARKETS = {
