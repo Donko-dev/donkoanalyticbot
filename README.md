@@ -107,12 +107,17 @@ Le trading comporte des risques de perte en capital.
 
 ---
 
+<br>
+
 <div align="center">
-<img src="assets/donko.png" alt="EMPIRE CODE Footer Logo" width="100"/>
+
+<img src="donko.png" alt="EMPIRE CODE Footer Logo" width="100"/>
+
 <br><br>
 
-**EMPIRE CODE &copy; 2026 — Tous droits réservés / All rights reserved / Alle Rechte vorbehalten**
+**EMPIRE CODE &copy; 2026 — Tous droits réservés / All rights reserved / Alle Rechte vorbehalten**  
 *Développeur Informatique Freelance & Expert IA*
+
 <br>
 
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-+229%2001%2096%2080%2091%2006-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://wa.me/2290196809106)
