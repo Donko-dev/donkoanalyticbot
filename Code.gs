@@ -61,6 +61,13 @@ const PAYPAL_CLIENT_SECRET = PROPS.getProperty("PAYPAL_CLIENT_SECRET") || "";
 // Clé partagée entre ce script et le bot Python (sécurise checkStatus / listSubscribers)
 const BOT_SHARED_SECRET = PROPS.getProperty("BOT_SHARED_SECRET") || "VOTRE_SECRET_PARTAGE";
 
+// ID de la Google Sheet cible — nécessaire si ce script est "autonome"
+// (créé depuis script.google.com et non via Extensions > Apps Script depuis
+// la Sheet elle-même). Récupérez cet ID dans l'URL de votre Sheet :
+// https://docs.google.com/spreadsheets/d/CET_ID_ICI/edit
+// Laissez vide si le script est bien un script LIÉ à la Sheet.
+const SPREADSHEET_ID = PROPS.getProperty("SPREADSHEET_ID") || "";
+
 // Identité du bot Telegram — créé une seule fois via @BotFather sur Telegram
 const TELEGRAM_BOT_TOKEN = PROPS.getProperty("TELEGRAM_BOT_TOKEN") || "";
 const TELEGRAM_BOT_USERNAME = PROPS.getProperty("TELEGRAM_BOT_USERNAME") || "VotreBotDonko";
@@ -393,7 +400,9 @@ function handleGetTelegramLink(e) {
 // GESTION DE LA FEUILLE GOOGLE SHEETS
 // ============================================================================
 function getOrCreateSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SPREADSHEET_ID
+    ? SpreadsheetApp.openById(SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
 
   if (!sheet) {
