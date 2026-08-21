@@ -34,7 +34,7 @@ const SITE_CONFIG = {
     keywords:
       "trading bot, signaux forex, signaux crypto, analyse technique IA, XAUUSD, RSI, DONKO ANALYTIC BOT, EMPIRE CODE, trading Afrique, Kikiapay",
     siteUrl: "https://empirecode.github.io/donko-analytic-bot/",
-    ogImage: "donko.png",
+    ogImage: "assets/donko.png",
     ogImageAlt: "Logo DONKO ANALYTIC BOT",
     twitterCard: "summary_large_image",
     themeColorMeta: "#0B0F1A",
@@ -82,8 +82,8 @@ const SITE_CONFIG = {
   // ==========================================================================
   brand: {
     name: "DONKO ANALYTIC BOT",
-    logoPath: "donko.png",
-    faviconPath: "favicon.ico",
+    logoPath: "assets/donko.png",
+    faviconPath: "assets/favicon.ico",
     tagline: "L'intelligence artificielle au service de vos décisions de trading",
   },
 
@@ -188,7 +188,7 @@ const SITE_CONFIG = {
   // 8. FOOTER — Pied de page (section obligatoire EMPIRE CODE)
   // ==========================================================================
   footer: {
-    logoPath: "donko.png",
+    logoPath: "assets/donko.png",
     logoAlt: "EMPIRE CODE Footer Logo",
     copyrightText:
       "EMPIRE CODE &copy; 2026 — Tous droits réservés / All rights reserved / Alle Rechte vorbehalten",
@@ -248,8 +248,7 @@ const SITE_CONFIG = {
   // 9. API — Endpoints backend (Google Apps Script déployé en Web App)
   // ==========================================================================
   api: {
-    // ⚠️ À remplacer par l'URL de déploiement réelle de Code.gs (Web App)
-    appsScriptWebAppUrl: "https://script.google.com/macros/s/REMPLACER_PAR_VOTRE_ID_DE_DEPLOIEMENT/exec",
+    appsScriptWebAppUrl: "https://script.google.com/macros/s/AKfycby_yUWb-_XiH6xZouQ6KPwtOQsjXd8n7VIEq78aVlhLpFIO1f1HyUkXVtuo6UsvBguN/exec",
     statusCheckEndpoint: "?action=checkStatus",
     paymentWebhookEndpoint: "?action=paymentWebhook",
     getTelegramLinkEndpoint: "?action=getTelegramLink",
